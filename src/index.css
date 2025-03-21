@@ -5,6 +5,7 @@
 
 @layer base {
   :root {
+    /* Default light mode variables */
     --background: 0 0% 98%;
     --foreground: 240 10% 3.9%;
 
@@ -33,10 +34,16 @@
     --input: 240 5.9% 90%;
     --ring: 240 5.9% 10%;
 
+    /* Brand colors */
+    --brand-primary: 262 83% 58%;
+    --brand-secondary: 199 89% 48%;
+    --brand-accent: 31 92% 62%;
+
     --radius: 0.75rem;
   }
 
   .dark {
+    /* Dark mode variables */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
 
@@ -64,6 +71,11 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 240 4.9% 83.9%;
+
+    /* Brand colors (dark mode) */
+    --brand-primary: 262 83% 68%;
+    --brand-secondary: 199 89% 58%;
+    --brand-accent: 31 92% 72%;
   }
 }
 
@@ -112,5 +124,29 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+  }
+  
+  .text-brand-primary {
+    color: hsl(var(--brand-primary));
+  }
+  
+  .text-brand-secondary {
+    color: hsl(var(--brand-secondary));
+  }
+  
+  .text-brand-accent {
+    color: hsl(var(--brand-accent));
+  }
+  
+  .bg-brand-primary {
+    background-color: hsl(var(--brand-primary));
+  }
+  
+  .bg-brand-secondary {
+    background-color: hsl(var(--brand-secondary));
+  }
+  
+  .bg-brand-accent {
+    background-color: hsl(var(--brand-accent));
   }
 }

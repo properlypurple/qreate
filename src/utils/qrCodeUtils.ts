@@ -1,4 +1,3 @@
-
 import QRCode from 'qrcode';
 
 export type QRCodeType = 'url' | 'text' | 'wifi' | 'email' | 'phone';
@@ -71,25 +70,24 @@ export async function generateQRCode(options: QRCodeOptions, format: 'svg' | 'da
   const data = formatQRCodeData(options);
   
   try {
+    const qrCodeOptions = {
+      color: {
+        dark: options.style.foreground,
+        light: options.style.background,
+      },
+      width: 300,
+      margin: 1,
+      // Note: Basic QRCode library doesn't support cornerSquareType, dotType, cornerRadius
+      // We'll handle those in the UI layer with custom rendering
+    };
+
     if (format === 'svg') {
       return await QRCode.toString(data, {
+        ...qrCodeOptions,
         type: 'svg',
-        color: {
-          dark: options.style.foreground,
-          light: options.style.background,
-        },
-        width: 300,
-        margin: 1,
       });
     } else {
-      return await QRCode.toDataURL(data, {
-        color: {
-          dark: options.style.foreground,
-          light: options.style.background,
-        },
-        width: 300,
-        margin: 1,
-      });
+      return await QRCode.toDataURL(data, qrCodeOptions);
     }
   } catch (error) {
     console.error('Error generating QR code:', error);

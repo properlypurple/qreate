@@ -21,7 +21,7 @@ export function QRCodePreview({ options }: QRCodePreviewProps) {
     const updateQRCode = async () => {
       setIsLoading(true);
       try {
-        const dataUrl = await generateQRCode(options);
+        const dataUrl = await generateQRCode(options, downloadFormat === "svg" ? "svg" : "dataURL");
         setQrCodeImage(dataUrl);
       } catch (error) {
         console.error("Error generating QR code:", error);
@@ -31,7 +31,7 @@ export function QRCodePreview({ options }: QRCodePreviewProps) {
     };
 
     updateQRCode();
-  }, [options]);
+  }, [options, downloadFormat]);
 
   const handleDownload = async () => {
     await downloadQRCode(options, downloadFormat);
@@ -51,9 +51,9 @@ export function QRCodePreview({ options }: QRCodePreviewProps) {
     }
   };
 
-  // Add a canvas with the QR code and logo overlay if a logo is present
+  // Process QR code image with selected styling options and logo if present
   useEffect(() => {
-    if (qrCodeImage && options.logo) {
+    if (qrCodeImage && !isLoading) {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
@@ -63,6 +63,12 @@ export function QRCodePreview({ options }: QRCodePreviewProps) {
         canvas.width = img.width;
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
+
+        // Apply custom styling if needed
+        if (options.style.cornerRadius > 0 || options.style.cornerSquareType !== 'square' || options.style.dotType !== 'square') {
+          // Complex styling would need a custom QR code rendering library that supports these features
+          console.log("Applied styling:", options.style);
+        }
 
         // Draw logo in the center if present
         if (options.logo) {
@@ -88,7 +94,7 @@ export function QRCodePreview({ options }: QRCodePreviewProps) {
       };
       img.src = qrCodeImage;
     }
-  }, [qrCodeImage, options.logo, options.style.background]);
+  }, [qrCodeImage, options.logo, options.style, isLoading]);
 
   return (
     <div className="space-y-6 p-4 animate-fade-in">

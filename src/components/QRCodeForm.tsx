@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { QRCodeOptions, QRCodeType, defaultQRCodeOptions } from "@/utils/qrCodeUtils";
 import { Input } from "@/components/ui/input";
@@ -134,7 +133,12 @@ export function QRCodeForm({ value, onChange }: QRCodeFormProps) {
                           data: { 
                             ...value.data, 
                             wifi: { 
-                              ...value.data.wifi || { encryption: "WPA", hidden: false }, 
+                              ...(value.data.wifi || { 
+                                ssid: "", 
+                                password: "", 
+                                encryption: "WPA", 
+                                hidden: false 
+                              }), 
                               ssid: e.target.value 
                             } 
                           },
@@ -156,7 +160,11 @@ export function QRCodeForm({ value, onChange }: QRCodeFormProps) {
                           data: { 
                             ...value.data, 
                             wifi: { 
-                              ...value.data.wifi || { encryption: "WPA", hidden: false }, 
+                              ...(value.data.wifi || { 
+                                ssid: "", 
+                                password: "", 
+                                hidden: false 
+                              }), 
                               password: e.target.value 
                             } 
                           },
@@ -175,7 +183,11 @@ export function QRCodeForm({ value, onChange }: QRCodeFormProps) {
                           data: { 
                             ...value.data, 
                             wifi: { 
-                              ...value.data.wifi || { ssid: "", password: "", hidden: false }, 
+                              ...(value.data.wifi || { 
+                                ssid: "", 
+                                password: "", 
+                                hidden: false 
+                              }), 
                               encryption: v 
                             } 
                           },
@@ -208,7 +220,11 @@ export function QRCodeForm({ value, onChange }: QRCodeFormProps) {
                           data: { 
                             ...value.data, 
                             wifi: { 
-                              ...value.data.wifi || { ssid: "", password: "", encryption: "WPA" }, 
+                              ...(value.data.wifi || { 
+                                ssid: "", 
+                                password: "", 
+                                encryption: "WPA" 
+                              }), 
                               hidden: checked 
                             } 
                           },
