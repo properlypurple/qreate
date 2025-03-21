@@ -1,6 +1,7 @@
 
 import { ThemeToggle } from "./ThemeToggle";
-import { QrCode } from "lucide-react";
+import { QrCode, Github } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function Header() {
   return (
@@ -10,7 +11,20 @@ export function Header() {
           <QrCode className="h-6 w-6 text-brand-primary" />
           <h1 className="text-lg font-semibold md:text-xl">QReative</h1>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="transition-all duration-300 ease-in-out"
+            asChild
+          >
+            <a href="https://github.com/your-repo/qreative" target="_blank" rel="noopener noreferrer">
+              <Github className="h-5 w-5" />
+              <span className="sr-only">GitHub</span>
+            </a>
+          </Button>
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );
