@@ -119,19 +119,170 @@ export async function generateQRCode(options: QRCodeOptions, format: 'svg' | 'da
       errorCorrectionLevel: 'H' as 'H' // Type assertion to QRCodeErrorCorrectionLevel
     };
 
-    // Generate basic QR code
+    // For styling, we need to generate the QR code first and then apply the styles
+    // SVG format allows for easy modification
     if (format === 'svg') {
-      return await QRCode.toString(data, {
+      const svgString = await QRCode.toString(data, {
         ...qrCodeOptions,
         type: 'svg',
       });
+      
+      return applyStylingToSvg(svgString, options.style);
     } else {
-      return await QRCode.toDataURL(data, qrCodeOptions);
+      // For dataURL (PNG), we first generate an SVG with styling, then convert it to a data URL
+      const svgString = await QRCode.toString(data, {
+        ...qrCodeOptions,
+        type: 'svg',
+      });
+      
+      const styledSvg = applyStylingToSvg(svgString, options.style);
+      
+      // Convert the styled SVG to a data URL
+      const svgBlob = new Blob([styledSvg], {type: 'image/svg+xml'});
+      const url = URL.createObjectURL(svgBlob);
+      
+      return convertSvgToDataUrl(url, options);
     }
   } catch (error) {
     console.error('Error generating QR code:', error);
     return '';
   }
+}
+
+// Helper function to apply styling to SVG
+function applyStylingToSvg(svgString: string, style: QRCodeOptions['style']): string {
+  const parser = new DOMParser();
+  const svgDoc = parser.parseFromString(svgString, 'image/svg+xml');
+  const svg = svgDoc.documentElement;
+  
+  // Get all path elements (QR modules)
+  const paths = Array.from(svg.querySelectorAll('path'));
+  
+  // The first three paths in the QRCode typically represent the positioning squares (corners)
+  const cornerPaths = paths.slice(0, 3); 
+  // The rest are regular QR code dots
+  const dotPaths = paths.slice(3);
+  
+  // Apply corner square styling
+  cornerPaths.forEach(path => {
+    if (style.cornerSquareType === 'rounded') {
+      path.setAttribute('rx', style.cornerRadius.toString());
+      path.setAttribute('ry', style.cornerRadius.toString());
+    } else if (style.cornerSquareType === 'dot') {
+      // For dot type, we use a circular shape
+      const bbox = path.getBBox();
+      const cx = bbox.x + bbox.width / 2;
+      const cy = bbox.y + bbox.height / 2;
+      const radius = Math.min(bbox.width, bbox.height) / 2;
+      
+      // Create a circle element
+      const circle = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', cx.toString());
+      circle.setAttribute('cy', cy.toString());
+      circle.setAttribute('r', radius.toString());
+      circle.setAttribute('fill', style.foreground);
+      
+      // Replace path with circle
+      path.parentNode?.replaceChild(circle, path);
+    }
+  });
+  
+  // Apply dot styling
+  dotPaths.forEach(path => {
+    if (style.dotType === 'rounded') {
+      path.setAttribute('rx', (style.cornerRadius / 2).toString());
+      path.setAttribute('ry', (style.cornerRadius / 2).toString());
+    } else if (style.dotType === 'dot') {
+      // For dot type, we use a circular shape
+      const bbox = path.getBBox();
+      const cx = bbox.x + bbox.width / 2;
+      const cy = bbox.y + bbox.height / 2;
+      const radius = Math.min(bbox.width, bbox.height) / 2;
+      
+      // Create a circle element
+      const circle = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', cx.toString());
+      circle.setAttribute('cy', cy.toString());
+      circle.setAttribute('r', radius.toString());
+      circle.setAttribute('fill', style.foreground);
+      
+      // Replace path with circle
+      path.parentNode?.replaceChild(circle, path);
+    }
+  });
+  
+  return new XMLSerializer().serializeToString(svg);
+}
+
+// Convert SVG to data URL
+async function convertSvgToDataUrl(svgUrl: string, options: QRCodeOptions): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        URL.revokeObjectURL(svgUrl);
+        reject(new Error('Could not get canvas context'));
+        return;
+      }
+      
+      canvas.width = img.width;
+      canvas.height = img.height;
+      
+      // Fill with background color
+      ctx.fillStyle = options.style.background;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw the SVG image
+      ctx.drawImage(img, 0, 0);
+      
+      // Add logo if present
+      if (options.logo) {
+        const logoImg = new Image();
+        logoImg.onload = () => {
+          // Calculate logo size (25% of QR code)
+          const logoSize = img.width * 0.25;
+          const logoX = (img.width - logoSize) / 2;
+          const logoY = (img.height - logoSize) / 2;
+          
+          // Create a white background for the logo
+          ctx.fillStyle = options.style.background;
+          ctx.fillRect(logoX - 2, logoY - 2, logoSize + 4, logoSize + 4);
+          
+          // Draw the logo
+          ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
+          
+          // Convert canvas to data URL
+          const dataURL = canvas.toDataURL('image/png');
+          URL.revokeObjectURL(svgUrl);
+          resolve(dataURL);
+        };
+        
+        logoImg.onerror = () => {
+          // If logo fails to load, return the QR code without logo
+          const dataURL = canvas.toDataURL('image/png');
+          URL.revokeObjectURL(svgUrl);
+          resolve(dataURL);
+        };
+        
+        logoImg.src = options.logo;
+      } else {
+        // No logo, just return the QR code
+        const dataURL = canvas.toDataURL('image/png');
+        URL.revokeObjectURL(svgUrl);
+        resolve(dataURL);
+      }
+    };
+    
+    img.onerror = () => {
+      URL.revokeObjectURL(svgUrl);
+      reject(new Error('Failed to load SVG'));
+    };
+    
+    img.src = svgUrl;
+  });
 }
 
 export async function downloadQRCode(options: QRCodeOptions, format: 'svg' | 'png' = 'png'): Promise<void> {

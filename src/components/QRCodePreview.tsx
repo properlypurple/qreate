@@ -7,6 +7,7 @@ import { Download, Share, Check, AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "sonner";
 
 interface QRCodePreviewProps {
   options: QRCodeOptions;
@@ -30,6 +31,7 @@ export function QRCodePreview({ options }: QRCodePreviewProps) {
         setHasContrastWarning(!hasGoodContrast(options.style.foreground, options.style.background));
       } catch (error) {
         console.error("Error generating QR code:", error);
+        toast.error("Failed to generate QR code");
       } finally {
         setIsLoading(false);
       }
@@ -39,125 +41,36 @@ export function QRCodePreview({ options }: QRCodePreviewProps) {
   }, [options, downloadFormat]);
 
   const handleDownload = async () => {
-    await downloadQRCode(options, downloadFormat);
+    try {
+      await downloadQRCode(options, downloadFormat);
+      toast.success(`QR code downloaded as ${downloadFormat.toUpperCase()}`);
+    } catch (error) {
+      console.error("Error downloading QR code:", error);
+      toast.error("Failed to download QR code");
+    }
   };
 
   const handleShare = async () => {
-    await shareQRCode(options);
+    try {
+      await shareQRCode(options);
+      toast.success("QR code shared successfully");
+    } catch (error) {
+      console.error("Error sharing QR code:", error);
+      toast.error("Failed to share QR code");
+    }
   };
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(qrCodeImage);
       setCopied(true);
+      toast.success("QR code copied to clipboard");
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error("Error copying to clipboard:", error);
+      toast.error("Failed to copy to clipboard");
     }
   };
-
-  // Apply styling based on options
-  const applyQRCodeStyling = (svgString: string) => {
-    const parser = new DOMParser();
-    const svg = parser.parseFromString(svgString, 'image/svg+xml').documentElement;
-    
-    // Apply corner square styling
-    const cornerSquares = svg.querySelectorAll('path');
-    if (cornerSquares && cornerSquares.length > 0) {
-      const { cornerSquareType, dotType, cornerRadius } = options.style;
-      
-      cornerSquares.forEach((path, index) => {
-        const isCornerSquare = index < 3; // The first three paths are typically corner squares in QRCode.js
-
-        if (isCornerSquare && cornerSquareType !== 'square') {
-          if (cornerSquareType === 'rounded') {
-            path.setAttribute('rx', `${cornerRadius || 8}`);
-            path.setAttribute('ry', `${cornerRadius || 8}`);
-          } else if (cornerSquareType === 'dot') {
-            const d = path.getAttribute('d');
-            if (d) {
-              path.setAttribute('d', makeDotPath(d));
-            }
-          }
-        } 
-        else if (!isCornerSquare && dotType !== 'square') {
-          if (dotType === 'rounded') {
-            path.setAttribute('rx', `${cornerRadius || 4}`);
-            path.setAttribute('ry', `${cornerRadius || 4}`);
-          } else if (dotType === 'dot') {
-            const d = path.getAttribute('d');
-            if (d) {
-              path.setAttribute('d', makeDotPath(d));
-            }
-          }
-        }
-      });
-    }
-
-    return new XMLSerializer().serializeToString(svg);
-  };
-
-  const makeDotPath = (pathD: string) => {
-    // This is a simplistic implementation. A full implementation would need to parse the path and modify it
-    return pathD.replace(/Z/g, 'A5,5 0 0 1 5,5 Z');
-  };
-
-  // Process QR code image with selected styling options and logo if present
-  useEffect(() => {
-    if (qrCodeImage && !isLoading) {
-      if (qrCodeImage.startsWith('<svg')) {
-        // It's an SVG, apply styling directly
-        const styledSvg = applyQRCodeStyling(qrCodeImage);
-        // Convert SVG string to data URL
-        const svgBlob = new Blob([styledSvg], {type: 'image/svg+xml'});
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (e.target && e.target.result) {
-            setQrCodeImage(e.target.result.toString());
-          }
-        };
-        reader.readAsDataURL(svgBlob);
-      } else {
-        // It's a data URL (PNG), use canvas
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        const img = new Image();
-        img.onload = () => {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
-
-          // Apply custom styling through canvas manipulation
-          // This is a simplified approach as full styling would require more complex image processing
-          
-          // Draw logo in the center if present
-          if (options.logo) {
-            const logoImg = new Image();
-            logoImg.onload = () => {
-              // Calculate logo size (25% of QR code)
-              const logoSize = img.width * 0.25;
-              const logoX = (img.width - logoSize) / 2;
-              const logoY = (img.height - logoSize) / 2;
-
-              // Create a white background for the logo
-              ctx.fillStyle = options.style.background;
-              ctx.fillRect(logoX - 2, logoY - 2, logoSize + 4, logoSize + 4);
-              
-              // Draw the logo
-              ctx.drawImage(logoImg, logoX, logoY, logoSize, logoSize);
-              
-              // Update QR code image with logo
-              setQrCodeImage(canvas.toDataURL("image/png"));
-            };
-            logoImg.src = options.logo;
-          }
-        };
-        img.src = qrCodeImage;
-      }
-    }
-  }, [qrCodeImage, options.logo, options.style, isLoading]);
 
   return (
     <div className="space-y-6 p-4 animate-fade-in">
