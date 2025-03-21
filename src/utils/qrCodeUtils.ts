@@ -116,7 +116,7 @@ export async function generateQRCode(options: QRCodeOptions, format: 'svg' | 'da
       },
       width: 300,
       margin: 1,
-      errorCorrectionLevel: 'H' // High error correction allows for more customization
+      errorCorrectionLevel: 'H' as 'H' // Type assertion to QRCodeErrorCorrectionLevel
     };
 
     // Generate basic QR code
@@ -126,8 +126,7 @@ export async function generateQRCode(options: QRCodeOptions, format: 'svg' | 'da
         type: 'svg',
       });
     } else {
-      const dataURL = await QRCode.toDataURL(data, qrCodeOptions);
-      return dataURL;
+      return await QRCode.toDataURL(data, qrCodeOptions);
     }
   } catch (error) {
     console.error('Error generating QR code:', error);
