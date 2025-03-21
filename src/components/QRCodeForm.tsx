@@ -163,6 +163,7 @@ export function QRCodeForm({ value, onChange }: QRCodeFormProps) {
                               ...(value.data.wifi || { 
                                 ssid: "", 
                                 password: "", 
+                                encryption: "WPA", 
                                 hidden: false 
                               }), 
                               password: e.target.value 
