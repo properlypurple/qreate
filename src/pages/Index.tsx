@@ -7,6 +7,7 @@ import { QRCodePreview } from "@/components/QRCodePreview";
 import { QRCodeOptions, defaultQRCodeOptions } from "@/utils/qrCodeUtils";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Toaster } from "@/components/ui/sonner";
 
 const Index = () => {
   const [qrCodeOptions, setQrCodeOptions] = useState<QRCodeOptions>(defaultQRCodeOptions);
@@ -45,6 +46,7 @@ const Index = () => {
         </main>
         
         <Footer />
+        <Toaster />
       </div>
     </ThemeProvider>
   );

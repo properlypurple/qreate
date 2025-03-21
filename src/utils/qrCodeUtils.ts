@@ -1,3 +1,4 @@
+
 import QRCode from 'qrcode';
 
 export type QRCodeType = 'url' | 'text' | 'wifi' | 'email' | 'phone';
@@ -66,6 +67,44 @@ export function formatQRCodeData(options: QRCodeOptions): string {
   }
 }
 
+// Function to check contrast ratio between two colors
+export function getContrastRatio(color1: string, color2: string): number {
+  // Convert hex to RGB
+  const getRGB = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return [r, g, b];
+  };
+
+  // Calculate relative luminance
+  const getLuminance = (rgb: number[]) => {
+    const [r, g, b] = rgb.map(v => {
+      v = v / 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+
+  const rgb1 = getRGB(color1);
+  const rgb2 = getRGB(color2);
+  const l1 = getLuminance(rgb1);
+  const l2 = getLuminance(rgb2);
+
+  // Calculate contrast ratio - (L1 + 0.05) / (L2 + 0.05) where L1 is the lighter color
+  const ratio = l1 > l2 
+    ? (l1 + 0.05) / (l2 + 0.05) 
+    : (l2 + 0.05) / (l1 + 0.05);
+  
+  return parseFloat(ratio.toFixed(2));
+}
+
+// Check if colors meet WCAG AA contrast requirements
+export function hasGoodContrast(color1: string, color2: string): boolean {
+  const ratio = getContrastRatio(color1, color2);
+  return ratio >= 4.5; // WCAG AA standard
+}
+
 export async function generateQRCode(options: QRCodeOptions, format: 'svg' | 'dataURL' = 'dataURL'): Promise<string> {
   const data = formatQRCodeData(options);
   
@@ -77,17 +116,18 @@ export async function generateQRCode(options: QRCodeOptions, format: 'svg' | 'da
       },
       width: 300,
       margin: 1,
-      // Note: Basic QRCode library doesn't support cornerSquareType, dotType, cornerRadius
-      // We'll handle those in the UI layer with custom rendering
+      errorCorrectionLevel: 'H' // High error correction allows for more customization
     };
 
+    // Generate basic QR code
     if (format === 'svg') {
       return await QRCode.toString(data, {
         ...qrCodeOptions,
         type: 'svg',
       });
     } else {
-      return await QRCode.toDataURL(data, qrCodeOptions);
+      const dataURL = await QRCode.toDataURL(data, qrCodeOptions);
+      return dataURL;
     }
   } catch (error) {
     console.error('Error generating QR code:', error);

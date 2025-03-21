@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { QRCodeOptions, QRCodeType, defaultQRCodeOptions } from "@/utils/qrCodeUtils";
+
+import { useState, useEffect } from "react";
+import { QRCodeOptions, QRCodeType, defaultQRCodeOptions, hasGoodContrast } from "@/utils/qrCodeUtils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,8 +8,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent } from "@/components/ui/card";
-import { Link, QrCode, Mail, Phone, Wifi, Type } from "lucide-react";
+import { Link, QrCode, Mail, Phone, Wifi, Type, AlertTriangle } from "lucide-react";
 import { LogoUpload } from "./LogoUpload";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface QRCodeFormProps {
   value: QRCodeOptions;
@@ -16,6 +18,13 @@ interface QRCodeFormProps {
 }
 
 export function QRCodeForm({ value, onChange }: QRCodeFormProps) {
+  const [hasContrastWarning, setHasContrastWarning] = useState<boolean>(false);
+
+  // Check contrast ratio whenever foreground or background colors change
+  useEffect(() => {
+    setHasContrastWarning(!hasGoodContrast(value.style.foreground, value.style.background));
+  }, [value.style.foreground, value.style.background]);
+
   const handleQRTypeChange = (type: QRCodeType) => {
     onChange({
       ...value,
@@ -395,6 +404,15 @@ export function QRCodeForm({ value, onChange }: QRCodeFormProps) {
                     />
                   </div>
                 </div>
+                
+                {hasContrastWarning && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      Low contrast between colors may affect QR code scanning
+                    </AlertDescription>
+                  </Alert>
+                )}
               </div>
 
               <div className="space-y-4">
